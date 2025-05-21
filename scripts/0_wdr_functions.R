@@ -886,7 +886,7 @@ runVst2 <- function(scCNA,
   return(scCNA)
 }
 
-knnSmooth_kaile <- function(scCNA,
+knnSmooth2 <- function(scCNA,
                       k = 4,
                       BPPARAM = bpparam()) {
   # setup data
