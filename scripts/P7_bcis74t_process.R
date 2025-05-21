@@ -72,7 +72,7 @@ varbin_mtx_all_log <- readRDS(file = paste0("./objects/", pro_name_d, c("_withou
 #------Knn smooth-----#######
 source("./0_wdr_functions.R")
 metadata(varbin_mtx_all_log)$genome <-  "hg19"
-varbin_mtx_all_log_knn <- knnSmooth_kaile(varbin_mtx_all_log,k=1)
+varbin_mtx_all_log_knn <- knnSmooth2(varbin_mtx_all_log,k=1)
 varbin_mtx_all_log_knn <- logNorm(varbin_mtx_all_log_knn)
 saveRDS(varbin_mtx_all_log_knn, file = paste0("./objects/", pro_name_d, c("_filtered_copykit_rnameta_knn.rds")))
 varbin_mtx_all_log_knn <- readRDS(paste0("./objects/", pro_name_d, c("_filtered_copykit_rnameta_knn.rds")))
