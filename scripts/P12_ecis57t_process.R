@@ -80,7 +80,7 @@ saveRDS(varbin_mtx_all_log, file = paste0("./objects/", pro_name_d, c("_without_
 
 #------Knn smooth-----#######
 metadata(varbin_mtx_all_log)$genome <-  "hg19"
-varbin_mtx_all_log_knn <- knnSmooth_kaile(varbin_mtx_all_log)
+varbin_mtx_all_log_knn <- knnSmooth2(varbin_mtx_all_log)
 varbin_mtx_all_log_knn <- logNorm(varbin_mtx_all_log_knn)
 saveRDS(varbin_mtx_all_log_knn, file = paste0("./objects/", pro_name_d, c("_filtered_copykit_rnameta_knn.rds")))
 # varbin_mtx_all_log_knn <- readRDS(paste0("./objects/", pro_name_d, c("_filtered_copykit_rnameta_knn.rds")))
@@ -645,9 +645,9 @@ names(clst_col_cs) <- subclone_cs
 ha_row_cs=rowAnnotation(subclones = my_order, col = list(subclones = clst_col_cs), show_annotation_name = F, show_legend = F)
 
 #-----header
-b <- read.table("/sibcb1/wangkailelab1/pengjinyu/wafergen/DNA/ffpe_dcis/data/chr_a.txt")
+b <- read.table("./pre_load_data/chr_a.txt")
 a <- unlist(b, use.names = F)
-chr2 <- read.table("/sibcb1/wangkailelab1/pengjinyu/wafergen/DNA/ffpe_dcis/data/chr_chr2.txt")
+chr2 <- read.table("./pre_load_data/chr_chr2.txt")
 ha_col=HeatmapAnnotation(foo=anno_text(a, rot = 0, gp = gpar(fontsize =10)), df =chr2, col = list(chr=c("1"="black", "2"="grey")), 
                          show_legend = F, annotation_name_side = "left")
 
