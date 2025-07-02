@@ -1,6 +1,6 @@
 #######function to combine two rna data and run SCTv2
 #####use output from rna_fq_preprocess pipeline
-Run_SCTV2 <- function(RNA_path1,,RNA_path2) {
+Run_SCTV2 <- function(RNA_path1,RNA_path2) {
 
   rna_path <- RNA_path1 
   seurat_object <- Read10X(data.dir = rna_path)
