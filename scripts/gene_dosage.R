@@ -803,3 +803,172 @@ Heatmap(as.matrix(cs_srt_cancer), cluster_columns = FALSE, border = TRUE, cluste
                                     title_gp = gpar(fontsize = 12, fontface = "bold"), labels_gp = gpar(fontsize = 12)),
         top_annotation = ha_col, left_annotation = ha_row2)
 dev.off()
+
+
+###########plot subclone pair cis/trans DE proportion
+sample <- list( "P1","P2", "P5", "P6","P7","P8" , "P9" ,"P10","P11","P12", "MDA231")
+
+subclone_pair_list <- list()
+for (i in sample) {
+  cis_file <- read_rds(paste0(i,"/RNA_subclone_pair_freq.rds"))
+  subclone_pair_list[[i]] <- cis_file
+}
+
+subclone_pair_df <- do.call("rbind",subclone_pair_list)
+head(subclone_pair_df)
+
+subclone_pair_cis_df <- subclone_pair_df[subclone_pair_df$subclone_gene_dosage=="Positive_dosage",]
+head(subclone_pair_cis_df)
+subclone_pair_cis_df$patient <- as.factor(subclone_pair_cis_df$patient)
+subclone_pair_cis_df$patient <- factor(subclone_pair_cis_df$patient,levels = c( "P1","P2", "P5", "P6","P7","P8" , "P9" ,"P10","P11","P12",  "MDA231"))
+
+
+pdf("cis_gene_proportion_summary.pdf",height = 12,width = 6,useDingbats = F)
+subclone_pair_cis_df |> 
+  tidyplot(patient, frequency, color = patient) |> 
+  add_mean_bar(alpha = 0.4) |>  
+  add_data_points_jitter(jitter_width = 0.2)  |> adjust_size(width = 6,height = 12,unit="cm") |> adjust_x_axis() |> reverse_x_axis_labels() |> remove_x_axis_title() |> adjust_y_axis(title = "Proportion of cis DE genes") |> add(coord_flip())
+dev.off() 
+
+###########global gene dosage analysis
+sample <- list("P1","P2","P4", "P5", "P6","P7","P8" , "P9" ,"P10","P11","P12")
+DNA_list <- list()            
+seg_ratio_consensus_list <- list()
+integer_consensus_list <- list()
+for (i in sample) {
+ dna_file <- read_rds(paste0(i,"/DNA_data_tumor.rds"))
+ dna_file@colData$subclones4 <- paste0(i,"_",dna_file@colData$subclones3)
+ dna_file <- calcConsensus(dna_file, consensus_by = "subclones4", assay = 'segment_ratios',fun = "mean")
+ CN_seg_consensus <- data.frame(dna_file@consensus)
+ rownames(CN_seg_consensus) <- str_replace(rownames(CN_seg_consensus),"V","")
+ seg_ratio_consensus_list[[i]] <- CN_seg_consensus
+ 
+ dna_file <- calcConsensus(dna_file, consensus_by = "subclones4", assay = 'integer',fun = "mean")
+ CN_integer_consensus <- data.frame(dna_file@consensus)
+ rownames(CN_integer_consensus) <- str_replace(rownames(CN_integer_consensus),"V","")
+ integer_consensus_list[[i]] <- CN_integer_consensus
+ 
+}
+
+seg_ratio_consensus_df <- do.call("cbind",seg_ratio_consensus_list)
+colnames(seg_ratio_consensus_df) <- sub(".*\\.", "", colnames(seg_ratio_consensus_df))
+
+integer_consensus_df <- do.call("cbind",integer_consensus_list)
+colnames(integer_consensus_df) <- sub(".*\\.", "", colnames(integer_consensus_df))
+
+rna_list <- list()
+for (i in sample) {
+ rna_file <- read_rds(paste0(i,"/RNA_cancer_matched.rds"))
+ rna_file$subclones4 <- paste0(i,"_",rna_file$subclone3)
+  rna_list[[i]] <- rna_file
+}
+RNA_merged <- merge(rna_list[[1]],rna_list[2:11],add.cell.ids=sample[1:11])
+RNA_merged <- RNA_merged[,RNA_merged$subclones4 %in% colnames(integer_consensus_df)]
+RNA_merged$subclones4 <- droplevels(RNA_merged$subclones4)
+######Only keep subclones with >= 20 cells                                   
+subclone_freq <- data.frame(table(RNA_merged$subclones4))
+RNA_merged <- RNA_merged[,RNA_merged$subclones4 %in% subclone_freq$Var1[subclone_freq$Freq >= 20]]
+seg_ratio_consensus_df <- seg_ratio_consensus_df[,colnames(seg_ratio_consensus_df) %in% unique(RNA_merged_20cell$subclones4)]
+integer_consensus_df <- integer_consensus_df[,colnames(integer_consensus_df) %in% unique(RNA_merged_20cell$subclones4)]
+#######integer CN=0 is very unlikely, mostly due to ploidy inference error, therefore, adjust to 1
+integer_consensus_df[integer_consensus_df==0] <- 1
+
+exp_pseudobulk <- AggregateExpression(RNA_merged,assays = "RNA",slot = "counts",return.seurat = T,group.by = "subclones4")
+exp_pseudobulk <- data.frame(exp_pseudobulk@assays$RNA@counts)
+meta_bulk <- data.frame(colnames(exp_pseudobulk))
+rownames(meta_bulk) <- meta_bulk$colnames.exp_pseudobulk.
+library(DESeq2)
+exp_dds_bulk <- DESeqDataSetFromMatrix(countData = exp_pseudobulk,
+                                       colData = meta_bulk,
+                                       design = ~ 1)
+exp_dds_bulk <- vst(exp_dds_bulk, blind=TRUE)
+exp_dds_bulk <- assay(exp_dds_bulk)
+exp_dds_bulk <- data.frame(exp_dds_bulk)
+
+exp_dds_bulk$CN_bins <- hg19_mappable_genes$pos[match(rownames(exp_dds_bulk),hg19_mappable_genes$gene)]
+exp_dds_bulk <- exp_dds_bulk[!is.na(exp_dds_bulk$CN_bins),]
+exp_dds_bulk$gene <- rownames(exp_dds_bulk)
+exp_dds_bulk_long <- gather(exp_dds_bulk,subclones,exp,colnames(exp_dds_bulk)[1]:colnames(exp_dds_bulk)[ncol(exp_dds_bulk)-2],factor_key = T)
+
+#########################VERY Important!!!!!!! subclones must be character variable! 
+exp_dds_bulk_long$subclones <- as.character(exp_dds_bulk_long$subclones)
+seg_ratio_consensus_matrix <- as.matrix(seg_ratio_consensus_df)
+integer_consensus_matrix <- as.matrix(integer_consensus_df)
+exp_dds_bulk_long$seg <-mapply(function(r, c) seg_ratio_consensus_matrix[r, c], exp_dds_bulk_long$CN_bins, exp_dds_bulk_long$subclones)
+exp_dds_bulk_long$integer <-mapply(function(r, c) integer_consensus_matrix[r, c], exp_dds_bulk_long$CN_bins, exp_dds_bulk_long$subclones)
+
+colnames(exp_dds_bulk_long)[3] <- "subclone"
+colnames(exp_dds_bulk_long)[4] <- "RNA"
+#####gene-level CN and expression correlation
+gene_seg_cor <- all_gene_CN_exp_correlation(exp_dds_bulk_long,"gene","seg")
+gene_integer_cor <- all_gene_CN_exp_correlation(exp_dds_bulk_long,"gene","integer")
+
+gene_seg_cor <- gene_seg_cor[!is.na(gene_seg_cor$correlation),]
+gene_integer_cor <- gene_integer_cor[!is.na(gene_integer_cor$correlation),]
+                                   
+gene_seg_cor2 <- gene_seg_cor
+gene_seg_cor2$gene_dosage <- ifelse(gene_seg_cor2$p_value<0.05 & gene_seg_cor2$correlation>0,"Dosage-sensitive genes", ifelse(gene_seg_cor2$p_value<0.05 & gene_seg_cor2$correlation<0,"Dosage-reverse genes", "Dosage-insensitive genes"))
+table(gene_seg_cor2$gene_dosage)
+gene_seg_cor3 <- gene_seg_cor2[gene_seg_cor2$gene_dosage %in% c("Dosage-sensitive genes","Dosage-insensitive genes"),]
+
+gene_seg_cor3$delta_CN_integer <- gene_integer_cor$delta_CN[match(gene_seg_cor3$Gene,gene_integer_cor$Gene)]
+
+gene_seg_cor3$delta_CN_class <- gene_seg_cor3$delta_CN_integer
+gene_seg_cor3$delta_CN_class[gene_seg_cor3$delta_CN_integer>=4 & gene_seg_cor3$delta_CN_integer <8 ] <- "4-7"
+gene_seg_cor3$delta_CN_class[gene_seg_cor3$delta_CN_integer>=8] <- "8+"
+
+pdf("gene_dosage_prop.pdf",height = 6,width=6,useDingbats = F)
+gene_seg_cor3 |> 
+  tidyplot(x = delta_CN_class, color = gene_dosage) |> 
+  add_barstack_relative() |> adjust_x_axis_title("Subclonal copy number difference") |> adjust_y_axis_title("Gene count") |> adjust_legend_title("Gene dosage") 
+dev.off()
+
+pdf("gene_dosage_effects_by_CN_dif_boxplot.pdf",height = 6,width=6,useDingbats = F)
+gene_seg_cor_subset2 |> 
+  tidyplot(x = delta_CN_class, y = correlation, color = delta_CN_class) |> 
+  add_data_points(size=0.1,alpha=0.25) |> 
+  add_data_points_jitter(size=0.1,jitter_width = 0.4,alpha=0.2) |>
+  add_boxplot(alpha = 0.25) |> 
+  
+  adjust_x_axis_title("Subclonal copy number difference") |>
+  adjust_y_axis_title("Correlation of gene expression and copy number") |>
+  adjust_legend_title("") |>   add_test_pvalue(method = "wilcoxon", p.adjust.method = "BH",ref.group = 5,hide_info = TRUE,padding_top = 0.08) |> adjust_colors(new_colors = YZRY_color_set2[1:4])
+dev.off()
+
+exp_dds_bulk_long_summary <- exp_dds_bulk_long %>%
+  group_by(gene, integer) %>%
+  dplyr::summarise(mean_expression = mean(RNA),mean_seg=mean(seg), .groups = "drop")
+
+exp_dds_bulk_long_ratio <- exp_dds_bulk_long_summary %>%
+  group_by(gene) %>%
+  dplyr::mutate(
+    ref_value = mean_expression[integer == 2],
+    ratio = mean_expression / ref_value
+  ) %>%
+  ungroup()
+
+exp_dds_bulk_long_ratio$global_dosage <- gene_seg_cor3$gene_dosage[match(exp_dds_bulk_long_ratio$gene,gene_seg_cor3$Gene)]
+exp_dds_bulk_long_ratio_subset <- exp_dds_bulk_long_ratio[!is.na(exp_dds_bulk_long_ratio$global_dosage),]
+exp_dds_bulk_long_ratio_subset$global_dosage <- factor(exp_dds_bulk_long_ratio_subset$global_dosage,levels = c("Dosage-sensitive genes","Dosage-insensitive genes"))
+#######fit by dosage-sensitive and dosage-insensitive separately 
+pdf("expression_CN_integer_less_10_20cell_no231_all_gene3.pdf", height = 6,width = 12,useDingbats = F)
+ggscatter(exp_dds_bulk_long_ratio_subset[exp_dds_bulk_long_ratio_subset$integer<=10,], x = "integer", y = "ratio", 
+          add = "loess", conf.int = F, color = "global_dosage",
+          cor.coef = F, cor.method = "pearson",
+          xlab = "Average integer CN", ylab = "Mean Gene expression/Diploid expression",size = 0.1)+theme(aspect.ratio = 1)+scale_x_continuous(breaks = seq(0, 10, by = 1))+stat_cor(aes(color = global_dosage))+scale_color_manual(values = c("#d55e00","#0072b2"))  
+dev.off()
+
+
+pdf("expression_CN_seg_less_10_20cell_no231_all_gene3.pdf", height = 6,width = 12,useDingbats = F)
+ggscatter(exp_dds_bulk_long_ratio_subset[exp_dds_bulk_long_ratio_subset$integer<=10,], x = "mean_seg", y = "ratio", 
+          add = "loess", conf.int = F, color = "global_dosage",
+          cor.coef = F, cor.method = "pearson",
+          xlab = "Average segment ratios", ylab = "Mean Gene expression/Diploid expression",size = 0.1)+theme(aspect.ratio = 1)+scale_x_continuous(breaks = seq(0, 10, by = 1))+stat_cor(aes(color = global_dosage))+scale_color_manual(values = c("#d55e00","#0072b2"))  
+dev.off()
+
+
+
+
+                                   
+                                   
+                                   
