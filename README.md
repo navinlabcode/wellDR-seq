@@ -45,7 +45,7 @@ Data files required for R script execution:
 R scripts depend on the following packages:
 
 **Session info:**
-
+```
 R version 4.1.2 (2021-11-01) 
 Platform: x86_64-pc-linux-gnu (64-bit)
 Running under: Red Hat Enterprise Linux
@@ -123,7 +123,7 @@ loaded via a namespace (and not attached):
 [177] munsell_0.5.0               GetoptLong_1.0.5            fastcluster_1.2.3           GenomeInfoDbData_1.2.7     
 [181] iterators_1.0.14            haven_2.4.3                 reshape2_1.4.4              gtable_0.3.0               
 [185] extrafont_0.17
-
+```
 ### System Requirements
 - R version: 4.1.2 or higher
 - Operating system: Linux (Red Hat Enterprise Linux recommended)
