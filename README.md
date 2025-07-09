@@ -45,7 +45,7 @@ Data files required for R script execution:
 R scripts depend on the following packages:
 
 **Session info:**
-#需要rui check
+需要rui check
 R version 4.1.2 (2021-11-01) 
 Platform: x86_64-pc-linux-gnu (64-bit)
 Running under: Red Hat Enterprise Linux
