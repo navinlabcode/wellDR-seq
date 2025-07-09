@@ -1,6 +1,6 @@
 # wellDR-seq
 
-This repository contains scripts and meta data metrics files used in the wellDR-seq paper (Coalescing single cell genomes and transcriptomes to decode breast cancer progression). wellDR-seq is a high-throughput single cell sequencing technology that enables simultaneously profiling the whole geneome and transcrptome from thousands of single cells.
+This repository contains scripts and meta data metrics files used in the wellDR-seq paper (Coalescing single cell genomes and transcriptomes to decode breast cancer progression). wellDR-seq is a high-throughput single cell sequencing technology that enables simultaneous profiling the whole geneome and transcrptome from thousands of single cells.
 
 ## Project Overview
 
@@ -45,7 +45,7 @@ Data files required for R script execution:
 R scripts depend on the following packages:
 
 **Session info:**
-需要rui check
+#需要rui check
 R version 4.1.2 (2021-11-01) 
 Platform: x86_64-pc-linux-gnu (64-bit)
 Running under: Red Hat Enterprise Linux
