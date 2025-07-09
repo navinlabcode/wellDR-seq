@@ -1,6 +1,6 @@
 # wellDR-seq
 
-This repository contains scripts and meta data metrics files used in the wellDR-seq paper (Coalescing single cell genomes and transcriptomes to decode breast cancer progression). wellDR-seq is a high-throughput single cell sequencing technology that enables simultaneous profiling the whole geneome and transcrptome from thousands of single cells.
+This repository contains scripts and meta data metrics files used in the wellDR-seq paper (Coalescing single cell genomes and transcriptomes to decode breast cancer progression). wellDR-seq is a high-throughput single cell sequencing technology that enables simultaneously profiling the whole geneome and transcrptome from thousands of single cells.
 
 ## Project Overview
 
