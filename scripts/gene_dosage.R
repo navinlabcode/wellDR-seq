@@ -951,7 +951,7 @@ exp_dds_bulk_long_ratio$global_dosage <- gene_seg_cor3$gene_dosage[match(exp_dds
 exp_dds_bulk_long_ratio_subset <- exp_dds_bulk_long_ratio[!is.na(exp_dds_bulk_long_ratio$global_dosage),]
 exp_dds_bulk_long_ratio_subset$global_dosage <- factor(exp_dds_bulk_long_ratio_subset$global_dosage,levels = c("Dosage-sensitive genes","Dosage-insensitive genes"))
 #######fit by dosage-sensitive and dosage-insensitive separately 
-pdf("expression_CN_integer_less_10_20cell_no231_all_gene3.pdf", height = 6,width = 12,useDingbats = F)
+pdf("expression_CN_integer_less_10.pdf", height = 6,width = 12,useDingbats = F)
 ggscatter(exp_dds_bulk_long_ratio_subset[exp_dds_bulk_long_ratio_subset$integer<=10,], x = "integer", y = "ratio", 
           add = "loess", conf.int = F, color = "global_dosage",
           cor.coef = F, cor.method = "pearson",
@@ -959,7 +959,7 @@ ggscatter(exp_dds_bulk_long_ratio_subset[exp_dds_bulk_long_ratio_subset$integer<
 dev.off()
 
 
-pdf("expression_CN_seg_less_10_20cell_no231_all_gene3.pdf", height = 6,width = 12,useDingbats = F)
+pdf("expression_CN_seg_less_10.pdf", height = 6,width = 12,useDingbats = F)
 ggscatter(exp_dds_bulk_long_ratio_subset[exp_dds_bulk_long_ratio_subset$integer<=10,], x = "mean_seg", y = "ratio", 
           add = "loess", conf.int = F, color = "global_dosage",
           cor.coef = F, cor.method = "pearson",
